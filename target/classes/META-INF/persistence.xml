@@ -17,7 +17,7 @@
 			<property name="javax.persistence.jdbc.user" value="sa" />
 			<property name="javax.persistence.jdbc.password" value="" />
 <!-- 			<property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect" /> -->
-			<property name="javax.persistence.schema-generation.database.action" value="create"/>
+			<property name="javax.persistence.schema-generation.database.action" value="none"/>
 			<property name="javax.persistence.schema-generation.scripts.action" value="none"/>
 <!-- 			<property name="openjpa.DynamicEnhancementAgent" value="false" /> -->
 			<!-- <property name="hibernate.hbm2ddl.auto" value="update" /> -->

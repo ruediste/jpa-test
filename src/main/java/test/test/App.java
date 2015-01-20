@@ -1,5 +1,7 @@
 package test.test;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -7,9 +9,6 @@ import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-
-import org.eclipse.persistence.config.EntityManagerProperties;
-import org.eclipse.persistence.config.PersistenceUnitProperties;
 
 import test.Entity0;
 import test.Entity17;
@@ -21,17 +20,22 @@ import test.Entity3;
  */
 public class App {
 	public static void main(String[] args) {
+		System.out.println("Inspecting Classpath");
+		inspect(Thread.currentThread().getContextClassLoader());
+		DynamicClassLoader cl = new DynamicClassLoader("test", Thread
+				.currentThread().getContextClassLoader());
+		Thread.currentThread().setContextClassLoader(cl);
+
 		ArrayList<Long> times = new ArrayList<>();
 		Map<String, Object> properties = new HashMap<>();
-		FilteringClassLoader cl = new FilteringClassLoader("test", Thread.currentThread().getContextClassLoader());
-		properties.put(PersistenceUnitProperties.CLASSLOADER, cl);
+		// properties.put(PersistenceUnitProperties.CLASSLOADER, cl);
 		System.out.println("Generating Schema");
 		{
 			Map<String, Object> generateProperties = new HashMap<>(properties);
 			// PersistenceUnitProperties.SCHEMA_GENERATION_DATABASE_ACTION
-			//generateProperties.put(
-			//		"javax.persistence.schema-generation.database.action",
-			//		"create");
+			// generateProperties.put(
+			// "javax.persistence.schema-generation.database.action",
+			// "create");
 			EntityManagerFactory emf = Persistence.createEntityManagerFactory(
 					"my-app", generateProperties);
 
@@ -49,7 +53,7 @@ public class App {
 
 				Entity0 en = new Entity0();
 				Entity17 en2 = new Entity17();
-			//	en.setManyToOne83(en2);
+				// en.setManyToOne83(en2);
 				em.persist(en);
 				em.persist(en2);
 
@@ -66,5 +70,18 @@ public class App {
 		}
 
 		System.exit(0);
+	}
+
+	private static void inspect(ClassLoader cl) {
+		if (cl.getParent() != null)
+			inspect(cl.getParent());
+		if (cl instanceof URLClassLoader) {
+			System.out.println("Url Classloader");
+			for (URL url : ((URLClassLoader) cl).getURLs()) {
+				System.out.println("  " + url);
+			}
+		} else {
+			System.out.println("Unhandled classloader type " + cl.getClass());
+		}
 	}
 }
