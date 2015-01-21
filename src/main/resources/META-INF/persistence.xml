@@ -4,10 +4,6 @@
 	version="2.1">
 	<persistence-unit name="my-app" transaction-type="RESOURCE_LOCAL">
 
-		<!-- <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider> -->
-		<!-- <provider>org.apache.openjpa.persistence.PersistenceProviderImpl -->
-		<!-- </provider> -->
-
 		<exclude-unlisted-classes>false</exclude-unlisted-classes>
 		<validation-mode>NONE</validation-mode>
 
