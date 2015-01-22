@@ -3,6 +3,7 @@ package com.github.ruediste;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -19,8 +20,6 @@ import test.Entity0;
 import test.Entity17;
 
 import com.github.ruediste.framework.entry.ApplicationInstance;
-import com.github.ruediste.framework.loggerBinding.LoggerBindingModule;
-import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -30,18 +29,11 @@ public class TestApplicationInstance implements ApplicationInstance {
 
 	Logger log;
 
-	private static class InstanceModule extends AbstractModule {
-
-		@Override
-		protected void configure() {
-
-		}
-
-	}
+	@Inject
+	TestSingleton testSingleton;
 
 	public TestApplicationInstance() {
-		Injector injector = Guice.createInjector(new InstanceModule(),
-				new LoggerBindingModule());
+		Injector injector = Guice.createInjector(new InstanceModule());
 		injector.injectMembers(this);
 
 		log.info("Creation EMF");
@@ -54,13 +46,13 @@ public class TestApplicationInstance implements ApplicationInstance {
 			HttpServletResponse response, int dispatch) throws IOException,
 			ServletException {
 
-		log.info("Handling request to "+request.getRequestURI());
-		
+		log.info("Handling request to " + request.getRequestURI());
+
 		long start = System.currentTimeMillis();
-		int size=0;
+		int size = 0;
 		try {
-			EntityManagerFactory emf = Persistence.createEntityManagerFactory(
-					"my-app");
+			EntityManagerFactory emf = Persistence
+					.createEntityManagerFactory("my-app");
 			EntityManager em = emf.createEntityManager();
 			em.getTransaction().begin();
 			em.find(Entity0.class, 0);
@@ -79,10 +71,10 @@ public class TestApplicationInstance implements ApplicationInstance {
 			em.getTransaction().commit();
 			emf.close();
 		} catch (Throwable t) {
-			log.error("Error in handle",t);
+			log.error("Error in handle", t);
 		}
 		sendResponse(response, size);
-		log.info("Handling time: "+(System.currentTimeMillis()-start));
+		log.info("Handling time: " + (System.currentTimeMillis() - start));
 	}
 
 	protected void sendResponse(HttpServletResponse response, int size)
@@ -90,7 +82,7 @@ public class TestApplicationInstance implements ApplicationInstance {
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/html");
 		PrintWriter out = response.getWriter();
-		out.println("<h1> Hello World "+size+"</h1>");
+		out.println("<h1> Hello Worlddd " + size + "</h1>");
 		out.close();
 	}
 
@@ -98,6 +90,5 @@ public class TestApplicationInstance implements ApplicationInstance {
 	public void close() {
 		emf.close();
 	}
-	
 
 }

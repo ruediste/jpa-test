@@ -71,10 +71,10 @@ public class Application {
 				});
 
 				// close current instnace
-				if (handler.currentInstance!=null){
+				if (handler.currentInstance != null) {
 					handler.currentInstance.instance.close();
 				}
-				
+
 				// create application instance
 				ApplicationInstance instance;
 				try {
@@ -92,9 +92,8 @@ public class Application {
 					}
 					handler.currentInstance = new ApplicationInstanceInfo(
 							instance, cl);
-				} catch (InstantiationException | IllegalAccessException
-						| ClassNotFoundException e) {
-					log.warn("Error loading application instance");
+				} catch (Throwable t) {
+					log.warn("Error loading application instance",t);
 				}
 				log.info("Reloading complete");
 			} finally {
@@ -124,6 +123,7 @@ public class Application {
 			server.setHandler(handler);
 			server.start();
 			server.join();
+			
 
 		} catch (Exception e) {
 			log.error("Error in Server", e);
