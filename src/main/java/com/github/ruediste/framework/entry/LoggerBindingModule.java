@@ -1,4 +1,4 @@
-package com.github.ruediste.framework.loggerBinding;
+package com.github.ruediste.framework.entry;
 
 import java.lang.reflect.Field;
 

@@ -20,7 +20,9 @@ public class FrontHandler extends AbstractHandler {
 			HttpServletResponse response, int dispatch) throws IOException,
 			ServletException {
 		if (currentInstance != null) {
-
+			// clear the request scope
+			RequestData.remove();
+			
 			Thread currentThread = Thread.currentThread();
 			ClassLoader old = currentThread.getContextClassLoader();
 			try {
@@ -30,6 +32,7 @@ public class FrontHandler extends AbstractHandler {
 						dispatch);
 			} finally {
 				currentThread.setContextClassLoader(old);
+				RequestData.remove();
 			}
 		} else
 			log.warn("current application instance is null");

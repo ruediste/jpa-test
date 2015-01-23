@@ -6,11 +6,27 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public interface ApplicationInstance {
+public abstract class ApplicationInstance {
 
-	void handle(String target, HttpServletRequest request,
+	
+	public final void start() {
+		
+		startImpl();
+	}
+
+	protected void startImpl() {
+		
+	}
+
+	public abstract void handle(String target, HttpServletRequest request,
 			HttpServletResponse response, int dispatch) throws IOException,
 			ServletException;
-	
-	void close();
+
+	public final void close() {
+		closeImpl();
+	}
+
+	protected void closeImpl() {
+		
+	};
 }

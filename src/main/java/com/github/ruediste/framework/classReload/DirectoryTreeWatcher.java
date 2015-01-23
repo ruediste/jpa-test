@@ -111,7 +111,6 @@ public class DirectoryTreeWatcher {
 
 				if (Files.isDirectory(path)) {
 					synchronized (this) {
-
 						if (recursivelyWatchedDirs.contains(rootPath)) {
 							log.debug("Watching directory " + path);
 							if (recursivelyWatchedDirs.add(path)) {
@@ -151,28 +150,22 @@ public class DirectoryTreeWatcher {
 
 	private volatile boolean closed;
 
-	private Gate closeGate = new Gate();
-
 	private class EventPoller implements Runnable {
 
 		@Override
 		public void run() {
-			try {
-				while (!closed) {
-					try {
-						WatchKey key = watchService.take();
-						processEvents(key);
-						key.reset();
-					} catch (InterruptedException | ClosedWatchServiceException e) {
-						// break loop
-						return;
-					} catch (Throwable t) {
-						log.warn("error in watch thread", t);
-						// continue loop
-					}
+			while (!closed) {
+				try {
+					WatchKey key = watchService.take();
+					processEvents(key);
+					key.reset();
+				} catch (InterruptedException | ClosedWatchServiceException e) {
+					// break loop
+					return;
+				} catch (Throwable t) {
+					log.warn("error in watch thread", t);
+					// continue loop
 				}
-			} finally {
-				closeGate.open();
 			}
 		}
 

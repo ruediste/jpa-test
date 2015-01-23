@@ -20,10 +20,11 @@ import test.Entity0;
 import test.Entity17;
 
 import com.github.ruediste.framework.entry.ApplicationInstance;
+import com.github.ruediste.framework.entry.ApplicationInstanceModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-public class TestApplicationInstance implements ApplicationInstance {
+public class TestApplicationInstance extends ApplicationInstance {
 
 	private EntityManagerFactory emf;
 
@@ -32,8 +33,9 @@ public class TestApplicationInstance implements ApplicationInstance {
 	@Inject
 	TestSingleton testSingleton;
 
-	public TestApplicationInstance() {
-		Injector injector = Guice.createInjector(new InstanceModule());
+	@Override
+	public void startImpl() {
+		Injector injector = Guice.createInjector(new ApplicationInstanceModule());
 		injector.injectMembers(this);
 
 		log.info("Creation EMF");
@@ -82,12 +84,16 @@ public class TestApplicationInstance implements ApplicationInstance {
 		response.setCharacterEncoding("UTF-8");
 		response.setContentType("text/html");
 		PrintWriter out = response.getWriter();
-		out.println("<h1> Hello Worlddd " + size + "</h1>");
+		printResponse(size, out);
 		out.close();
 	}
 
+	protected void printResponse(int size, PrintWriter out) {
+		out.println("<h1> Hello World " + size + "</h1>");
+	}
+
 	@Override
-	public void close() {
+	public void closeImpl() {
 		emf.close();
 	}
 

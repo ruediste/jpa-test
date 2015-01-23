@@ -10,8 +10,7 @@ import javax.persistence.Persistence;
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 
 import com.github.ruediste.framework.entry.Application;
-import com.github.ruediste.framework.loggerBinding.LoggerBindingModule;
-import com.google.inject.AbstractModule;
+import com.github.ruediste.framework.entry.ApplicationModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -21,17 +20,8 @@ import com.google.inject.Injector;
  */
 public class App {
 
-	public static class ApplicationModule extends AbstractModule {
-
-		@Override
-		protected void configure() {
-		}
-
-	}
-
 	public static void main(String[] args) throws SQLException {
-		Injector injector = Guice.createInjector(new ApplicationModule(),
-				new LoggerBindingModule());
+		Injector injector = Guice.createInjector(new ApplicationModule());
 
 		// open and hold DB connection
 		Connection connection = DriverManager.getConnection(

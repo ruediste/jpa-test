@@ -5,9 +5,12 @@ import java.util.HashSet;
 import javax.inject.Inject;
 
 import org.mortbay.jetty.Server;
+import org.mortbay.jetty.bio.SocketConnector;
+import org.mortbay.jetty.servlet.SessionHandler;
 import org.slf4j.Logger;
 
 import com.github.ruediste.framework.classReload.DynamicClassLoader;
+import com.github.ruediste.framework.classReload.Gate;
 import com.google.inject.Provider;
 
 public class Application {
@@ -19,27 +22,88 @@ public class Application {
 
 	private Class<? extends ApplicationInstance> instanceClass;
 
-	private FrontHandler handler;
+	@Inject
+	FrontHandler handler;
 
-	private final Object lock = new Object();
-	private boolean reloadInProgress;
-	private boolean reloadRequested;
+	private Gate applicationInstanceInitiallyLoaded = new Gate();
 
-	private void reloadApplicationInstance() {
-		log.debug("Entering reloadApplicationInstance");
-		synchronized (lock) {
-			if (reloadInProgress) {
-				reloadRequested = true;
-				return;
+	private Server server;
+
+	public String startForTesting(ApplicationInstance instance) {
+		handler.currentInstance = new ApplicationInstanceInfo(instance, Thread
+				.currentThread().getContextClassLoader());
+		try {
+			server = new Server();
+
+			SocketConnector connector = new SocketConnector();
+			connector.setPort(0); // let connector pick an unused port #
+			server.addConnector(connector);
+
+			SessionHandler sessionHandler = new SessionHandler();
+			sessionHandler.setHandler(handler);
+			sessionHandler.setServer(server);
+
+			server.setHandler(sessionHandler);
+			server.start();
+
+			instance.start();
+
+			String host = connector.getHost();
+			if (host == null) {
+				host = "localhost";
 			}
-
-			// we are going to do the reload
-			reloadInProgress = true;
-			reloadRequested = false;
+			int port = connector.getLocalPort();
+			return String.format("http://%s:%d/", host, port);
+		} catch (Exception e) {
+			log.error("Error starting Jetty", e);
+			throw new RuntimeException(e);
 		}
-		// loop to reload until no reload is requested during reload
-		while (true)
-			try {
+	}
+
+	public void start(Class<? extends ApplicationInstance> instanceClass) {
+		this.instanceClass = instanceClass;
+		// initialize the application instance
+		{
+			Thread reloadThread = new Thread(new ApplicationInstanceReloader(),
+					"Application Instance reload thread");
+			reloadThread.setDaemon(true);
+			reloadThread.start();
+		}
+
+		applicationInstanceInitiallyLoaded.pass();
+
+		try {
+			Server server = new Server(8080);
+			server.setHandler(handler);
+			server.start();
+			server.join();
+		} catch (Exception e) {
+			log.error("Error starting Jetty", e);
+		}
+
+	}
+
+	public void stop() {
+		try {
+			server.stop();
+		} catch (Exception e) {
+			throw new RuntimeException("Error while stopping server", e);
+		}
+	}
+
+	private class ApplicationInstanceReloader implements Runnable {
+
+		Gate reloadGate = new Gate(true);
+		private boolean initialLoading = true;
+
+		@Override
+		public void run() {
+			while (true) {
+				log.info("Waiting for reload trigger");
+
+				reloadGate.pass();
+
+				log.info("Reloading application instance");
 				// wait a bit to consolidate changes
 				try {
 					Thread.sleep(100);
@@ -47,37 +111,53 @@ public class Application {
 					throw new RuntimeException(e);
 				}
 
-				log.info("Reloading application instance");
-				// create new instance
-				DynamicClassLoader cl = loaderProvider.get();
-				HashSet<String> projects = new HashSet<>();
-				projects.add("test");
-				cl.initialize(projects, new Runnable() {
+				// close the gate, such that the changes can open it again
+				reloadGate.close();
 
-					boolean fired;
-
-					@Override
-					public synchronized void run() {
-						log.debug("class was changed ");
-						synchronized (this) {
-							if (fired)
-								return;
-							fired = true;
-						}
-						cl.close();
-						// when anything changes, update instance
-						reloadApplicationInstance();
+				try {
+					// close current instance
+					if (handler.currentInstance != null) {
+						handler.currentInstance.instance.close();
 					}
-				});
-
-				// close current instnace
-				if (handler.currentInstance != null) {
-					handler.currentInstance.instance.close();
+				} catch (Throwable t) {
+					log.error("Error while closing current instance", t);
 				}
 
-				// create application instance
-				ApplicationInstance instance;
+				DynamicClassLoader cl;
 				try {
+					cl = loaderProvider.get();
+					// create new class loader
+					HashSet<String> projects = new HashSet<>();
+					projects.add("test");
+					cl.initialize(projects, new Runnable() {
+
+						boolean fired;
+
+						@Override
+						public synchronized void run() {
+							log.debug("class was changed ");
+
+							// fire once only
+							synchronized (this) {
+								if (fired)
+									return;
+								fired = true;
+							}
+							cl.close();
+							// when anything changes, update instance
+							reloadGate.open();
+						}
+					});
+				} catch (Throwable t) {
+					log.error(
+							"Error while creating new class loader, quiting reload loop. Restart server",
+							t);
+					throw t;
+				}
+
+				try {
+					// create application instance
+					ApplicationInstance instance;
 
 					Thread currentThread = Thread.currentThread();
 					ClassLoader old = currentThread.getContextClassLoader();
@@ -92,41 +172,19 @@ public class Application {
 					}
 					handler.currentInstance = new ApplicationInstanceInfo(
 							instance, cl);
+
+					instance.start();
+					log.info("Reloading complete");
 				} catch (Throwable t) {
-					log.warn("Error loading application instance",t);
+					log.warn("Error loading application instance", t);
 				}
-				log.info("Reloading complete");
-			} finally {
-				synchronized (lock) {
-					if (reloadRequested) {
-						// do another reload
-						reloadRequested = false;
-					} else {
-						// we are done
-						reloadInProgress = false;
-						break;
-					}
+
+				if (initialLoading) {
+					initialLoading = false;
+					applicationInstanceInitiallyLoaded.open();
 				}
 			}
-	}
-
-	public void start(Class<? extends ApplicationInstance> instanceClass) {
-		this.instanceClass = instanceClass;
-		try {
-			handler = new FrontHandler();
-
-			// initialize the application instance
-			reloadApplicationInstance();
-
-			// start jetty server
-			Server server = new Server(8080);
-			server.setHandler(handler);
-			server.start();
-			server.join();
-			
-
-		} catch (Exception e) {
-			log.error("Error in Server", e);
 		}
+
 	}
 }
