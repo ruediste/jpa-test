@@ -24,7 +24,7 @@ import com.github.ruediste.laf.core.guice.ApplicationInstanceModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-public class TestApplicationInstance extends ApplicationInstance {
+public class DemoApplicationInstance extends ApplicationInstance {
 
 	private EntityManagerFactory emf;
 

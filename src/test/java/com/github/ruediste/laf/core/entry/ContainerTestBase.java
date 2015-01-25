@@ -1,20 +1,13 @@
 package com.github.ruediste.laf.core.entry;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.function.Consumer;
+import java.lang.reflect.Constructor;
 
 import org.junit.After;
 import org.junit.Before;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 
-import com.github.ruediste.laf.core.entry.Application;
-import com.github.ruediste.laf.core.entry.ApplicationInstance;
-import com.github.ruediste.laf.core.entry.ApplicationModule;
 import com.google.common.reflect.TypeToken;
-import com.google.inject.Guice;
-import com.google.inject.Module;
 
 public abstract class ContainerTestBase<T extends ApplicationInstance> {
 
@@ -28,38 +21,32 @@ public abstract class ContainerTestBase<T extends ApplicationInstance> {
 		return new HtmlUnitDriver();
 	}
 
-	/**
-	 * Hook to add additional {@link Guice}- {@link Module}s for the
-	 * application-injector
-	 */
-	protected void collectApplicationModules(Consumer<Module[]> consumer) {
-
-	}
-
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setupContainerTestBase() throws Exception {
 
-		ArrayList<Module> modules = new ArrayList<>();
-		modules.add(new ApplicationModule());
-		collectApplicationModules(m -> modules.addAll(Arrays.asList(m)));
-
-		application = Guice.createInjector(modules).getInstance(
-				Application.class);
+		TestFrontServlet servlet = new TestFrontServlet();
 
 		Class<?> instanceType = TypeToken.of(getClass())
 				.resolveType(ContainerTestBase.class.getTypeParameters()[0])
 				.getRawType();
 		try {
-			applicationInstance = (T) instanceType.getDeclaredConstructor(
-					getClass()).newInstance(this);
+			Constructor<?> constructor = instanceType.getDeclaredConstructor(
+					getClass());
+			constructor.setAccessible(true);
+			applicationInstance = (T) constructor.newInstance(this);
 		} catch (NoSuchMethodException e) {
 			// try other variant
-			applicationInstance = (T) instanceType.getDeclaredConstructor()
+			Constructor<?> constructor = instanceType.getDeclaredConstructor();
+			constructor.setAccessible(true);
+			applicationInstance = (T) constructor
 					.newInstance();
 		}
 
-		serverUrl = application.startForTesting(applicationInstance);
+		servlet.setFixedApplicationInstance(applicationInstance);
+		
+		application=new Application();
+		serverUrl = application.startForTesting(servlet);
 	}
 
 	@After

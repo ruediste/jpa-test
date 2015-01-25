@@ -11,7 +11,7 @@ import com.github.ruediste.laf.core.entry.Application;
 public class App {
 
 	public static void main(String[] args) throws SQLException {
-		new Application().start(TestFrontServlet.class);
+		new Application().start(DemoFrontServlet.class);
 	}
 
 }

@@ -16,7 +16,13 @@ import com.google.inject.Key;
  */
 public class RequestData {
 
-	private final static ThreadLocal<RequestData> current = new ThreadLocal<RequestData>();
+	private final static ThreadLocal<RequestData> current = new ThreadLocal<RequestData>(){
+		@Override
+		protected RequestData initialValue() {
+			return new RequestData(null, null, null);
+		}
+	};
+	
 	private HttpMethod method;
 
 	public RequestData(HttpServletRequest req, HttpServletResponse resp,

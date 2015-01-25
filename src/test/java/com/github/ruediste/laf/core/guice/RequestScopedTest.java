@@ -17,8 +17,6 @@ import com.github.ruediste.laf.core.entry.ApplicationInstance;
 import com.github.ruediste.laf.core.entry.ContainerTestBase;
 import com.github.ruediste.laf.core.entry.HttpMethod;
 import com.github.ruediste.laf.core.entry.InstanceTestUtil;
-import com.github.ruediste.laf.core.guice.ApplicationInstanceModule;
-import com.github.ruediste.laf.core.guice.RequestScoped;
 import com.google.inject.Guice;
 
 public class RequestScopedTest extends
@@ -58,7 +56,7 @@ public class RequestScopedTest extends
 				HttpMethod method) throws IOException,
 				ServletException {
 			String value = test1.getValue();
-			test1.setValue(request.getPathInfo());
+			test1.setValue(request.getServletPath());
 			util.sendHtmlResponse(""+value+test2.getValue());
 		}
 	}

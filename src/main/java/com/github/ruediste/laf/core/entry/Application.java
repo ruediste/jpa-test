@@ -23,14 +23,13 @@ public class Application {
 			ctx.setContextPath("/");
 			ctx.addServlet(holder, "/");
 
-			Server server = new Server();
+			server = new Server();
 			ServerConnector connector = new ServerConnector(server);
 			connector.setPort(0);
 			server.setConnectors(new Connector[] { connector });
 
 			server.setHandler(ctx);
 			server.start();
-			server.join();
 
 			String host = connector.getHost();
 			if (host == null) {
@@ -56,7 +55,7 @@ public class Application {
 			ctx.setContextPath("");
 			ctx.addServlet(holder, "/");
 
-			Server server = new Server(8080);
+			server = new Server(8080);
 			server.setHandler(ctx);
 			server.start();
 			server.join();

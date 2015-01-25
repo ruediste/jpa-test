@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import com.github.ruediste.laf.core.classReload.DynamicClassLoader;
 import com.github.ruediste.laf.core.classReload.Gate;
 import com.github.ruediste.laf.core.guice.RequestData;
+import com.google.inject.Injector;
 import com.google.inject.Provider;
 
 public abstract class FrontServlet extends HttpServlet {
@@ -33,7 +34,13 @@ public abstract class FrontServlet extends HttpServlet {
 		this.fixedApplicationInstance = fixedApplicationInstance;
 	}
 
-	protected abstract Class<? extends ApplicationInstance> getApplicationInstanceClass();
+	/**
+	 * Override for normal front servlets. Not required if a fixed
+	 * {@link ApplicationInstance} is used
+	 */
+	protected Class<? extends ApplicationInstance> getApplicationInstanceClass() {
+		return null;
+	}
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -54,13 +61,14 @@ public abstract class FrontServlet extends HttpServlet {
 		} catch (Exception e) {
 			throw new RuntimeException("Error during initialization", e);
 		}
-		
+
 		if (fixedApplicationInstance != null) {
 			// we are started with a fixed application instance, just use it.
 			// Primarily used for Unit Testing
 			currentInstance = new ApplicationInstanceInfo(
 					fixedApplicationInstance, Thread.currentThread()
 							.getContextClassLoader());
+			fixedApplicationInstance.start();
 		} else {
 			// normal initialization
 			{
@@ -75,8 +83,12 @@ public abstract class FrontServlet extends HttpServlet {
 		}
 	}
 
+	/**
+	 * Overide for custom initialization. Run before the ApplicationInstance is created/started. 
+	 * Needs at least to create an {@link Injector} and inject this instance.
+	 */
 	protected abstract void initImpl() throws Exception;
-
+	
 	@Override
 	public void destroy() {
 	}
@@ -108,6 +120,16 @@ public abstract class FrontServlet extends HttpServlet {
 
 		@Override
 		public void run() {
+
+			String applicationInstanceClassName;
+			{
+				Class<? extends ApplicationInstance> cls = getApplicationInstanceClass();
+				if (cls == null) {
+					throw new RuntimeException(
+							"Please override getApplicationInstanceClass() or provide a fixed application instance");
+				}
+				applicationInstanceClassName=cls.getName();
+			}
 			while (true) {
 				log.info("Waiting for reload trigger");
 
@@ -175,13 +197,13 @@ public abstract class FrontServlet extends HttpServlet {
 						currentThread.setContextClassLoader(cl);
 
 						instance = (ApplicationInstance) cl.loadClass(
-								getApplicationInstanceClass().getName())
-								.newInstance();
+								applicationInstanceClassName).newInstance();
 
-						currentInstance = new ApplicationInstanceInfo(instance, cl);
-						
+						currentInstance = new ApplicationInstanceInfo(instance,
+								cl);
+
 						instance.start();
-						
+
 					} finally {
 						currentThread.setContextClassLoader(old);
 					}

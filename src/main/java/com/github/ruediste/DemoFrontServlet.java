@@ -14,8 +14,9 @@ import com.github.ruediste.laf.core.entry.FrontServlet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-public class TestFrontServlet extends FrontServlet {
-
+public class DemoFrontServlet extends FrontServlet {
+	private static final long serialVersionUID = 1L;
+	
 	@SuppressWarnings("unused")
 	private Connection connection;
 
@@ -40,7 +41,7 @@ public class TestFrontServlet extends FrontServlet {
 
 	@Override
 	protected Class<? extends ApplicationInstance> getApplicationInstanceClass() {
-		return TestApplicationInstance.class;
+		return DemoApplicationInstance.class;
 	}
 
 }

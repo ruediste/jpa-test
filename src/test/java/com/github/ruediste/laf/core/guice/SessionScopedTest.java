@@ -85,7 +85,7 @@ public class SessionScopedTest extends
 
 			util.sendHtmlResponse(test.getValue());
 			
-			test.setValue(request.getPathInfo());
+			test.setValue(request.getServletPath());
 		}
 
 	}
