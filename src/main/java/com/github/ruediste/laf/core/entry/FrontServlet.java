@@ -16,10 +16,9 @@ import com.github.ruediste.laf.core.classReload.Gate;
 import com.github.ruediste.laf.core.guice.RequestData;
 import com.google.inject.Provider;
 
-public class FrontServlet extends HttpServlet {
+public abstract class FrontServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 
-	public static String APPLICATION_INSTANCE_CLASS_NAME_INIT_PARAMETER_KEY = "com.github.ruediste.laf.applicationInstance";
 	Logger log;
 
 	@Inject
@@ -28,6 +27,13 @@ public class FrontServlet extends HttpServlet {
 	public volatile ApplicationInstanceInfo currentInstance;
 	private Gate applicationInstanceInitiallyLoaded = new Gate();
 	private ApplicationInstance fixedApplicationInstance;
+
+	public void setFixedApplicationInstance(
+			ApplicationInstance fixedApplicationInstance) {
+		this.fixedApplicationInstance = fixedApplicationInstance;
+	}
+
+	protected abstract Class<? extends ApplicationInstance> getApplicationInstanceClass();
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -42,9 +48,16 @@ public class FrontServlet extends HttpServlet {
 	}
 
 	@Override
-	public void init() throws ServletException {
+	public final void init() throws ServletException {
+		try {
+			initImpl();
+		} catch (Exception e) {
+			throw new RuntimeException("Error during initialization", e);
+		}
+		
 		if (fixedApplicationInstance != null) {
-			// we are started with a fixed application instance, just use it. Primarily used for Unit Testing
+			// we are started with a fixed application instance, just use it.
+			// Primarily used for Unit Testing
 			currentInstance = new ApplicationInstanceInfo(
 					fixedApplicationInstance, Thread.currentThread()
 							.getContextClassLoader());
@@ -62,6 +75,8 @@ public class FrontServlet extends HttpServlet {
 		}
 	}
 
+	protected abstract void initImpl() throws Exception;
+
 	@Override
 	public void destroy() {
 	}
@@ -70,7 +85,7 @@ public class FrontServlet extends HttpServlet {
 			HttpMethod method) throws IOException, ServletException {
 		if (currentInstance != null) {
 			// set request data
-			RequestData.setCurrent(new RequestData(req,resp, method));
+			RequestData.setCurrent(new RequestData(req, resp, method));
 
 			Thread currentThread = Thread.currentThread();
 			ClassLoader old = currentThread.getContextClassLoader();
@@ -160,14 +175,16 @@ public class FrontServlet extends HttpServlet {
 						currentThread.setContextClassLoader(cl);
 
 						instance = (ApplicationInstance) cl.loadClass(
-								getInitParameter(APPLICATION_INSTANCE_CLASS_NAME_INIT_PARAMETER_KEY)).newInstance();
+								getApplicationInstanceClass().getName())
+								.newInstance();
 
+						currentInstance = new ApplicationInstanceInfo(instance, cl);
+						
+						instance.start();
+						
 					} finally {
 						currentThread.setContextClassLoader(old);
 					}
-					currentInstance = new ApplicationInstanceInfo(instance, cl);
-
-					instance.start();
 					log.info("Reloading complete");
 				} catch (Throwable t) {
 					log.warn("Error loading application instance", t);
@@ -180,10 +197,6 @@ public class FrontServlet extends HttpServlet {
 			}
 		}
 
-	}
-	public void setFixedApplicationInstance(
-			ApplicationInstance fixedApplicationInstance) {
-		this.fixedApplicationInstance = fixedApplicationInstance;
 	}
 
 }

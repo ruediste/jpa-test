@@ -1,2 +1,2 @@
 project = test
-exclude = com.github.ruediste.framework.**
+exclude = com.github.ruediste.laf.**
