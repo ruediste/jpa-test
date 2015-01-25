@@ -9,8 +9,8 @@ import javax.persistence.Persistence;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 
-import com.github.ruediste.framework.entry.Application;
-import com.github.ruediste.framework.entry.ApplicationModule;
+import com.github.ruediste.laf.core.entry.Application;
+import com.github.ruediste.laf.core.entry.ApplicationModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 

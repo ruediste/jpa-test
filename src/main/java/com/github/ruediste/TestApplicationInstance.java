@@ -3,7 +3,6 @@ package com.github.ruediste;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -17,10 +16,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 
 import test.Entity0;
-import test.Entity17;
+import test.Entity1;
 
-import com.github.ruediste.framework.entry.ApplicationInstance;
-import com.github.ruediste.framework.entry.ApplicationInstanceModule;
+import com.github.ruediste.laf.core.entry.ApplicationInstance;
+import com.github.ruediste.laf.core.entry.HttpMethod;
+import com.github.ruediste.laf.core.guice.ApplicationInstanceModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -29,9 +29,6 @@ public class TestApplicationInstance extends ApplicationInstance {
 	private EntityManagerFactory emf;
 
 	Logger log;
-
-	@Inject
-	TestSingleton testSingleton;
 
 	@Override
 	public void startImpl() {
@@ -44,8 +41,8 @@ public class TestApplicationInstance extends ApplicationInstance {
 	}
 
 	@Override
-	public void handle(String target, HttpServletRequest request,
-			HttpServletResponse response, int dispatch) throws IOException,
+	public void handle(HttpServletRequest request, HttpServletResponse response,
+			HttpMethod method) throws IOException,
 			ServletException {
 
 		log.info("Handling request to " + request.getRequestURI());
@@ -60,7 +57,7 @@ public class TestApplicationInstance extends ApplicationInstance {
 			em.find(Entity0.class, 0);
 
 			Entity0 en = new Entity0();
-			Entity17 en2 = new Entity17();
+			Entity1 en2 = new Entity1();
 			// en.setManyToOne83(en2);
 			em.persist(en);
 			em.persist(en2);
